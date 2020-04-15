@@ -1,10 +1,11 @@
 package testpkg
 
 // Version2 is defined as follow:
-//   field    bits
-//   -----    ----
-//   version  4
-//   Len      16
+//   field     bits
+//   -----     ----
+//   version   4
+//   Len       16
+//   (unused)  12
 type Version2 uint32
 
 // Getters.

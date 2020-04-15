@@ -37,6 +37,7 @@ const (
 // Struct packs a struct into an uint{8, 16, 32, 64} and generates the code to access its members.
 // The struct must be defined as follow:
 //  - field name is used as the method name to access its value
+//  - fields named _ do not produce any method
 //  - field type must be an array of T, where:
 //     - T is the type returned by the field method
 //     - T is one of bool, {u}int or {u}int{8, 16, 32, 64}
@@ -133,16 +134,21 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 		}{field.Name, on})
 	}
 
+	var unused int
 	switch {
 	case size <= 0:
 		return werr(ErrEmptyStruct)
 	case size <= 8:
+		unused += 8 - size
 		size = 8
 	case size <= 16:
+		unused += 16 - size
 		size = 16
 	case size <= 32:
+		unused += 32 - size
 		size = 32
 	case size <= 64:
+		unused += 64 - size
 		size = 64
 	default:
 		return werr(ErrStructOverflow)
@@ -167,6 +173,9 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 	_, _ = fmt.Fprintf(tw, "//   -----\t\t----\n")
 	for _, c := range descr {
 		_, _ = fmt.Fprintf(tw, "//   %s\t\t%d\n", c.string, c.int)
+	}
+	if unused > 0 {
+		_, _ = fmt.Fprintf(tw, "//   (unused)\t\t%d\n", unused)
 	}
 	_ = tw.Flush()
 	comments := fmt.Sprintf("// %s is defined as follow:\n%s", typ.Name(), buf.String())
@@ -205,8 +214,14 @@ const structSource = `
 type {{.TypeName}} {{.Type}}
 
 // Getters.
-{{range .Fields}}func (x {{.TypeName}}) {{.Name}}() {{.Out}} { {{template "body_get" .}} }
+{{range .Fields}}
+{{- if not (eq .Name "_") -}}
+func (x {{.TypeName}}) {{.Name}}() {{.Out}} { {{template "body_get" .}} }
+{{ end -}}
 {{end}}
 // Setters.
-{{range .Fields}}func (x *{{.TypeName}}) {{.Name}}Set(v {{.Out}}) *{{.TypeName}} { {{template "body_set" .}} }
+{{range .Fields}}
+{{- if not (eq .Name "_") -}}
+func (x *{{.TypeName}}) {{.Name}}Set(v {{.Out}}) *{{.TypeName}} { {{template "body_set" .}} }
+{{ end -}}
 {{end}}`

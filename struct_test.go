@@ -26,8 +26,9 @@ func TestStruct(t *testing.T) {
 		}
 		Version3 struct {
 			version  [4]uint
+			_        [8]int // reserved
 			Len      [16]int
-			reserved [3]int
+			_        [4]int // reserved
 			Checksum [32]uint32
 		}
 		Broken1 struct {
