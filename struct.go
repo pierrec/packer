@@ -5,6 +5,8 @@ import (
 	"io"
 	"math/bits"
 	"reflect"
+	"strings"
+	"text/tabwriter"
 	"text/template"
 )
 
@@ -78,6 +80,11 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 		Mask     string
 	}
 	var fields []_Field
+	var descr []struct {
+		string
+		int
+	}
+
 	var size int
 	for i, n := 0, typ.NumField(); i < n; i++ {
 		field := typ.Field(i)
@@ -118,6 +125,10 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 			Mask:  fmt.Sprintf("0x%X", 1<<on-1),
 		})
 		size += on
+		descr = append(descr, struct {
+			string
+			int
+		}{field.Name, on})
 	}
 
 	switch {
@@ -140,17 +151,31 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 		fields[i].Type = typname
 	}
 
+	// Package header.
 	const header = `package %s
 `
 	if _, err := fmt.Fprintf(w, header, pkg); err != nil {
 		return werr(err)
 	}
 
+	// Type comments.
+	buf := new(strings.Builder)
+	tw := tabwriter.NewWriter(buf, 0, 0, 1, ' ', 0)
+	_, _ = fmt.Fprintf(tw, "//   field\t\tbits\n")
+	_, _ = fmt.Fprintf(tw, "//   -----\t\t----\n")
+	for _, c := range descr {
+		_, _ = fmt.Fprintf(tw, "//   %s\t\t%d\n", c.string, c.int)
+	}
+	_ = tw.Flush()
+	comments := fmt.Sprintf("// %s is defined as follow:\n%s", typ.Name(), buf.String())
+
 	err := structTemplate.Execute(w, struct {
+		Comments string
 		TypeName string
 		Type     string
 		Fields   []_Field
 	}{
+		comments,
 		typ.Name(),
 		typname,
 		fields,
@@ -174,6 +199,7 @@ const structSource = `
 {{- else if eq .Shift 0 -}} *x = *x&^{{.Mask}} | {{.TypeName}}(v)&{{.Mask}}; return x
 {{- else -}} *x = *x&^({{.Mask}}<<{{.Shift}}) | ({{.TypeName}}(v)&{{.Mask}}<<{{.Shift}}); return x {{- end}}
 {{- end}}
+{{.Comments -}}
 type {{.TypeName}} {{.Type}}
 
 // Getters.

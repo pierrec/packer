@@ -1,5 +1,9 @@
 package testpkg
 
+// Version1 is defined as follow:
+//   field    bits
+//   -----    ----
+//   version  4
 type Version1 uint8
 
 // Getters.

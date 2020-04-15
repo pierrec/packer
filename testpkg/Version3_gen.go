@@ -1,5 +1,12 @@
 package testpkg
 
+// Version3 is defined as follow:
+//   field     bits
+//   -----     ----
+//   version   4
+//   Len       16
+//   reserved  3
+//   Checksum  32
 type Version3 uint64
 
 // Getters.
