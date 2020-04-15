@@ -71,7 +71,7 @@ func TestStruct(t *testing.T) {
 			case tc.err != nil && err == nil:
 				t.Fatal("expected error not found")
 			case tc.err != nil && err != nil:
-				var serr StructError
+				var serr Error
 				switch {
 				case !errors.As(err, &serr):
 					t.Fatalf("got %T; want %T", err, serr)
