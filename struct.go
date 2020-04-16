@@ -47,7 +47,7 @@ const (
 //
 // It returns an error if the struct overflows uint64.
 //
-// ``pkg`` defines the package name used for the generated code.
+// ``pkg`` defines the package name used for the generated code. If empty, the package clause is not generated.
 //
 // Example:
 //  type Header struct{
@@ -167,11 +167,13 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 		fields[i].Type = typname
 	}
 
-	// Package header.
-	const header = `package %s
+	if pkg != "" {
+		// Package header.
+		const header = `package %s
 `
-	if _, err := fmt.Fprintf(w, header, pkg); err != nil {
-		return werr(err)
+		if _, err := fmt.Fprintf(w, header, pkg); err != nil {
+			return werr(err)
+		}
 	}
 
 	// Type comments.
@@ -209,12 +211,14 @@ var structTemplate = template.Must(template.New("struct code gen").Parse(structS
 
 const structSource = `
 {{- define "body_get"}}
-{{- if eq .Out "bool" -}} return x>>{{.Shift}}&1 != 0
+{{- if and (eq .Out "bool") (eq .Shift 0) -}} return x&1 != 0
+{{- else if eq .Out "bool" -}} return x>>{{.Shift}}&1 != 0
 {{- else if eq .Shift 0 -}} return {{.Out}}(x&{{.Mask}})
 {{- else -}} return {{.Out}}(x>>{{.Shift}}&{{.Mask}}) {{- end}}
 {{- end}}
 {{- define "body_set"}}
-{{- if eq .Out "bool" -}} const b = 1<<{{.Shift}}; if v { *x = *x&^b | b } else { *x &^= b }; return x
+{{- if and (eq .Out "bool") (eq .Shift 0) -}} if v { *x |= 1 } else { *x &^= 1 }; return x
+{{- else if eq .Out "bool" -}} const b = 1<<{{.Shift}}; if v { *x = *x&^b | b } else { *x &^= b }; return x
 {{- else if eq .Shift 0 -}} *x = *x&^{{.Mask}} | {{.TypeName}}(v)&{{.Mask}}; return x
 {{- else -}} *x = *x&^({{.Mask}}<<{{.Shift}}) | ({{.TypeName}}(v)&{{.Mask}}<<{{.Shift}}); return x {{- end}}
 {{- end}}
