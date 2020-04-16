@@ -3,7 +3,6 @@ package packer
 import (
 	"fmt"
 	"io"
-	"math/bits"
 	"reflect"
 	"strings"
 	"text/tabwriter"
@@ -28,7 +27,7 @@ const (
 	ErrNotAStruct     structError = "not a struct"
 	ErrEmptyStruct    structError = "empty struct"
 	ErrEmbeddedField  structError = "embedded field not supported"
-	ErrFieldNotArray  structError = "field must be an array"
+	ErrFieldBadType   structError = "field must be one of array, bool, uint{8,16,32}"
 	ErrFieldType      structError = "unsupported field type"
 	ErrFieldOverflow  structError = "too many bits for field type"
 	ErrStructOverflow structError = "struct overflows uint64"
@@ -38,10 +37,13 @@ const (
 // The struct must be defined as follow:
 //  - field name is used as the method name to access its value
 //  - fields named _ do not produce any method
-//  - field type must be an array of T, where:
-//     - T is the type returned by the field method
-//     - T is one of bool, {u}int or {u}int{8, 16, 32, 64}
-//     - the size of the array defines the number of bits used by the value
+//  - field type must be either:
+//     - bool
+//     - uint{8, 16, 32}
+//     - [n]T where:
+//       - T is the type returned by the field method
+//       - T is one of bool, {u}int or {u}int{8, 16, 32, 64}
+//       - n defines the number of bits used by the value
 //
 // It returns an error if the struct overflows uint64.
 //
@@ -50,7 +52,7 @@ const (
 // Example:
 //  type Header struct{
 //    version [4]uint
-//    Flag    [1]bool
+//    Flag    bool
 //    Len     [16]int
 //  }
 // results in the following type:
@@ -94,44 +96,50 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 		if field.Anonymous {
 			return werrf(field.Name, ErrEmbeddedField)
 		}
-		if field.Type.Kind() != reflect.Array {
-			return werrf(field.Name, ErrFieldNotArray)
-		}
-		out := field.Type.Elem()
-		on := field.Type.Len()
 
-		var n int
-		switch kind := out.Kind(); kind {
+		out := field.Type
+		var outBits int
+		switch field.Type.Kind() {
 		case reflect.Bool:
-			n = 1
-		case reflect.Int, reflect.Uint:
-			n = bits.OnesCount(^uint(0))
-		case reflect.Int8, reflect.Uint8:
-			n = 8
-		case reflect.Int16, reflect.Uint16:
-			n = 16
-		case reflect.Int32, reflect.Uint32:
-			n = 32
-		case reflect.Int64, reflect.Uint64:
-			n = 64
+			outBits = 1
+		case reflect.Int8, reflect.Int16, reflect.Int32,
+			reflect.Uint8, reflect.Uint16, reflect.Uint32:
+			outBits = out.Bits()
+		case reflect.Array:
+			out = field.Type.Elem()
+			outBits = field.Type.Len()
+			var n int
+			switch out.Kind() {
+			case reflect.Bool:
+				n = 1
+			case reflect.Int, reflect.Uint:
+				// Code generated on 64bits platforms must work on 32bits ones.
+				n = 32
+			case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+				reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				n = out.Bits()
+			default:
+				return werrf(field.Name, ErrFieldType)
+			}
+			// Make sure that the extracted bits fit into the returned type.
+			if outBits > n {
+				return werrf(field.Name, ErrFieldOverflow)
+			}
 		default:
-			return werrf(field.Name, ErrFieldType)
+			return werrf(field.Name, ErrFieldBadType)
 		}
-		// Make sure that the extracted bits fit into the returned type.
-		if on > n {
-			return werrf(field.Name, ErrFieldOverflow)
-		}
+
 		fields = append(fields, _Field{
 			Name:  field.Name,
 			Out:   out.String(),
 			Shift: size,
-			Mask:  fmt.Sprintf("0x%X", 1<<on-1),
+			Mask:  fmt.Sprintf("0x%X", 1<<outBits-1),
 		})
-		size += on
+		size += outBits
 		descr = append(descr, struct {
 			string
 			int
-		}{field.Name, on})
+		}{field.Name, outBits})
 	}
 
 	var unused int

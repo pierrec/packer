@@ -10,25 +10,34 @@ func TestGen(t *testing.T) {
 		run   func(int) int
 	}
 	for _, tc := range []tcase{
-		{"Version1",
+		{"Version1.version",
 			_i(10),
 			func(x int) int {
 				var v Version1
 				return int(v.versionSet(uint(x)).version())
 			}},
-		{"Version2",
+		{"Version1.flag",
+			_i(1),
+			func(x int) int {
+				var v Version1
+				if v.flagSet(true).flag() {
+					return 1
+				}
+				return 0
+			}},
+		{"Version2.Len",
 			_i(10, 255, 256, 1000, 1024, 2000, 1<<7),
 			func(x int) int {
 				var v Version2
 				return v.LenSet(x).Len()
 			}},
-		{"Version3",
+		{"Version3.Len",
 			_i(10, 255, 256, 1000, 1024, 2000, 1<<7),
 			func(x int) int {
 				var v Version3
 				return v.LenSet(x).Len()
 			}},
-		{"Version3",
+		{"Version3.Checksum",
 			_i(0xAAAAAAAA, 0xFFFFFFFF, 0x12345678, 0xDEADBEEF, 0xC001CAFE),
 			func(x int) int {
 				var v Version3

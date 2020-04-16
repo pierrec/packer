@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+//go:generate go run gen.go
+
 func TestStruct(t *testing.T) {
 	type tcase struct {
 		in  interface{}
@@ -17,16 +19,29 @@ func TestStruct(t *testing.T) {
 	}
 
 	type (
+		Ints struct {
+			Int8  int8
+			Int16 int16
+			Int32 int32
+		}
+		Uints struct {
+			Uint8  uint8
+			Uint16 uint16
+			Uint32 uint32
+		}
 		Version1 struct {
 			version [4]uint
+			flag    [1]bool
 		}
 		Version2 struct {
 			version [4]uint
+			flag    bool
 			Len     [16]int
 		}
 		Version3 struct {
 			version  [4]uint
-			_        [8]int // reserved
+			flag     bool
+			_        [7]int // reserved
 			Len      [16]int
 			_        [4]int // reserved
 			Checksum [32]uint32
@@ -51,6 +66,8 @@ func TestStruct(t *testing.T) {
 	)
 
 	for _, tc := range []tcase{
+		{Ints{}, nil},
+		{Uints{}, nil},
 		{Version1{}, nil},
 		{Version2{}, nil},
 		{Version3{}, nil},
@@ -58,7 +75,7 @@ func TestStruct(t *testing.T) {
 		{Broken1{}, ErrStructOverflow},
 		{Broken2{}, ErrFieldOverflow},
 		{Broken3{}, ErrFieldType},
-		{Broken4{}, ErrFieldNotArray},
+		{Broken4{}, ErrFieldBadType},
 		{Broken5{}, ErrEmbeddedField},
 		{Broken6{}, ErrEmptyStruct},
 	} {
@@ -102,7 +119,7 @@ func TestStruct(t *testing.T) {
 func ExampleStruct() {
 	// type Header struct {
 	//   version [4]uint
-	//   Flag    [1]bool
+	//   Flag    bool
 	//   Len     [8]int
 	// }
 

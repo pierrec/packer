@@ -11,7 +11,7 @@ import (
 
 type Header struct {
 	version [4]uint
-	Flag    [1]bool
+	Flag    bool
 	Len     [16]int
 }
 
