@@ -18,7 +18,7 @@ type Config struct {
 	PkgName     string // package name used for the generated file (default="")
 }
 
-func (c *Config) Init() {
+func (c *Config) init() {
 	if c.TopComments == "" {
 		c.TopComments = TopComments
 	}

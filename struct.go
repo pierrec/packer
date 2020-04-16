@@ -68,7 +68,7 @@ func Struct(w io.Writer, config *Config, s interface{}) error {
 	werr := func(err error) error { return fmt.Errorf("packer: type %T: %w", s, err) }
 	werrf := func(f string, err error) error { return fmt.Errorf("packer: type %T.%s: %w", s, f, err) }
 
-	config.Init()
+	config.init()
 
 	typ := reflect.TypeOf(s)
 	if typ.Kind() == reflect.Ptr {
