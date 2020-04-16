@@ -82,7 +82,7 @@ func TestStruct(t *testing.T) {
 		label := fmt.Sprintf("testpkg/%s_gen.go", reflect.TypeOf(tc.in).Name())
 		t.Run(label, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			err := Struct(buf, "testpkg", tc.in)
+			err := Struct(buf, &Config{PkgName: "testpkg"}, tc.in)
 			switch {
 			case tc.err == nil && err != nil:
 				t.Fatal(err)

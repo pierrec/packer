@@ -64,9 +64,11 @@ const (
 //    (*Header).versionSet(uint)
 //    (*Header).Flag(bool)
 //    (*Header).LenSet(int)
-func Struct(w io.Writer, pkg string, s interface{}) error {
+func Struct(w io.Writer, config *Config, s interface{}) error {
 	werr := func(err error) error { return fmt.Errorf("packer: type %T: %w", s, err) }
 	werrf := func(f string, err error) error { return fmt.Errorf("packer: type %T.%s: %w", s, f, err) }
+
+	config.Init()
 
 	typ := reflect.TypeOf(s)
 	if typ.Kind() == reflect.Ptr {
@@ -167,13 +169,14 @@ func Struct(w io.Writer, pkg string, s interface{}) error {
 		fields[i].Type = typname
 	}
 
-	if pkg != "" {
-		// Package header.
-		const header = `package %s
-`
-		if _, err := fmt.Fprintf(w, header, pkg); err != nil {
-			return werr(err)
-		}
+	// Package header.
+	header := []string{config.TopComments}
+	if config.PkgName != "" {
+		line := fmt.Sprintf("package %s\n", config.PkgName)
+		header = append(header, line)
+	}
+	if _, err := fmt.Fprintf(w, strings.Join(header, "\n")); err != nil {
+		return werr(err)
 	}
 
 	// Type comments.
