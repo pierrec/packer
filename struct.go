@@ -16,24 +16,24 @@ type (
 		// Make sure errors cannot be created outside this package.
 		private()
 	}
-	structError string
+	_error string
 )
 
-func (e structError) private()      {}
-func (e structError) Error() string { return string(e) }
+func (e _error) private()      {}
+func (e _error) Error() string { return string(e) }
 
 // The package functions wrap one of the following errors.
 const (
-	ErrNotAStruct     structError = "not a struct"
-	ErrEmptyStruct    structError = "empty struct"
-	ErrEmbeddedField  structError = "embedded field not supported"
-	ErrFieldBadType   structError = "field must be one of array, bool, uint{8,16,32}"
-	ErrFieldType      structError = "unsupported field type"
-	ErrFieldOverflow  structError = "too many bits for field type"
-	ErrStructOverflow structError = "struct overflows uint64"
+	ErrNotAStruct     _error = "not a struct"
+	ErrEmptyStruct    _error = "empty struct"
+	ErrEmbeddedField  _error = "embedded field not supported"
+	ErrFieldBadType   _error = "field must be one of array, bool, uint{8,16,32}"
+	ErrFieldType      _error = "unsupported field type"
+	ErrFieldOverflow  _error = "too many bits for field type"
+	ErrStructOverflow _error = "struct overflows uint64"
 )
 
-// Struct packs a struct into an uint{8, 16, 32, 64} and generates the code to access its members.
+// GenPackedStruct packs a struct into an uint{8, 16, 32, 64} and generates the code to access its members.
 // The struct must be defined as follow:
 //  - field name is used as the method name to access its value
 //  - fields named _ do not produce any method
@@ -64,7 +64,7 @@ const (
 //    (*Header).versionSet(uint)
 //    (*Header).Flag(bool)
 //    (*Header).LenSet(int)
-func Struct(w io.Writer, config *Config, s interface{}) error {
+func GenPackedStruct(w io.Writer, config *Config, s interface{}) error {
 	werr := func(err error) error { return fmt.Errorf("packer: type %T: %w", s, err) }
 	werrf := func(f string, err error) error { return fmt.Errorf("packer: type %T.%s: %w", s, f, err) }
 
@@ -163,7 +163,7 @@ func Struct(w io.Writer, config *Config, s interface{}) error {
 	default:
 		return werr(ErrStructOverflow)
 	}
-	typname := fmt.Sprintf("uint%d", size)
+	typname := fmt.Sprintf("packuint%d", size)
 	for i := range fields {
 		fields[i].TypeName = typ.Name()
 		fields[i].Type = typname
