@@ -7,23 +7,25 @@ import (
 	"github.com/pierrec/packer/iobyte"
 )
 
+func minBuf(buf []byte, n int) []byte {
+	if cap(buf) < n {
+		return make([]byte, n)
+	}
+	return buf[:n]
+}
+
 // PackUint64 packs x into buf and returns the number of bytes used.
 //
 // buf is used as scratch space if it has at least 9 bytes in capacity.
 func PackUint64(buf []byte, x uint64) int {
-	if cap(buf) < 9 {
-		buf = make([]byte, 9)
-	}
-	return packuint.PackUint64(buf, x)
+	return packuint.PackUint64(minBuf(buf, 9), x)
 }
 
 // PackUint64To packs x to w.
 //
 // buf is used as scratch space if it has at least 9 bytes in capacity.
 func PackUint64To(w io.Writer, buf []byte, x uint64) error {
-	n := PackUint64(buf, x)
-	_, err := w.Write(buf[:n])
-	return err
+	return packuint.PackUint64To(w, minBuf(buf, 9), x)
 }
 
 // UnpackUint64 unpacks buf and returns the value.
@@ -40,19 +42,14 @@ func UnpackUint64From(r io.Reader, buf []byte) (uint64, error) {
 //
 // buf is used as scratch space if it has at least 5 bytes in capacity.
 func PackUint32(buf []byte, x uint32) int {
-	if cap(buf) < 5 {
-		buf = make([]byte, 5)
-	}
-	return packuint.PackUint32(buf, x)
+	return packuint.PackUint32(minBuf(buf, 5), x)
 }
 
 // PackUint32To packs x to w.
 //
 // buf is used as scratch space if it has at least 5 bytes in capacity.
 func PackUint32To(w io.Writer, buf []byte, x uint32) error {
-	n := PackUint32(buf, x)
-	_, err := w.Write(buf[:n])
-	return err
+	return packuint.PackUint32To(w, minBuf(buf, 5), x)
 }
 
 // UnpackUint32 unpacks buf and returns the value.

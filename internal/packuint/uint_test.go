@@ -1,6 +1,7 @@
 package packuint
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"testing"
@@ -16,6 +17,7 @@ func TestPackUint64(t *testing.T) {
 		1 << 10,
 		1 << 20,
 		1<<20 | 1<<10,
+		1 << 30,
 		1 << 63,
 		0xF0F0F0F0,
 		0xF0F0F0F0F0F0F0F0,
@@ -30,6 +32,21 @@ func TestPackUint64(t *testing.T) {
 			n := PackUint64(buf, tc)
 			t.Logf("packed size for %d = %d", tc, n)
 			x := UnpackUint64(buf[0], buf[1:])
+			if got, want := x, tc; got != want {
+				t.Errorf("got %d; want %d", got, want)
+			}
+		})
+		t.Run("io "+label, func(t *testing.T) {
+			buf := make([]byte, 16)
+			rw := new(bytes.Buffer)
+			if err := PackUint64To(rw, buf, tc); err != nil {
+				t.Fatal(err)
+			}
+
+			x, err := UnpackUint64From(rw, buf)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got, want := x, tc; got != want {
 				t.Errorf("got %d; want %d", got, want)
 			}
@@ -56,7 +73,22 @@ func TestPackUint32(t *testing.T) {
 			buf := make([]byte, 16)
 			n := PackUint32(buf, tc)
 			t.Logf("packed size for %d = %d", tc, n)
-			x := UnpackUint32(buf[0], buf[1:n])
+			x := UnpackUint32(buf[0], buf[1:])
+			if got, want := x, tc; got != want {
+				t.Errorf("got %d; want %d", got, want)
+			}
+		})
+		t.Run("io "+label, func(t *testing.T) {
+			buf := make([]byte, 16)
+			rw := new(bytes.Buffer)
+			if err := PackUint32To(rw, buf, tc); err != nil {
+				t.Fatal(err)
+			}
+
+			x, err := UnpackUint32From(rw, buf)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got, want := x, tc; got != want {
 				t.Errorf("got %d; want %d", got, want)
 			}

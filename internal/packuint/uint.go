@@ -106,8 +106,9 @@ func PackUint64(buf []byte, x uint64) int {
 		buf[0] = bitmap
 		return i + 1
 	}
-	buf[i+1] = byte(x >> shift)
 	buf[0] = bitmap | 1
+	i++
+	buf[i] = byte(x >> shift)
 	return i + 1
 }
 
@@ -298,22 +299,22 @@ func UnpackUint32(bitmap byte, buf []byte) uint32 {
 	a, b, c, d, e, f, g := entry.A()*4, entry.B()*4, entry.C()*4, entry.D()*4, entry.E()*4, entry.F()*4, entry.G()*4
 	switch entry.Num() {
 	case 1:
-		return uint32(buf[0]) << a
+		return uint32(buf[0]&0xF) << a
 	case 2:
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b
 	case 3:
-		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1])<<c
+		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c
 	case 4:
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d
 	case 5:
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d |
-			uint32(buf[2])<<e
+			uint32(buf[2]&0xF)<<e
 	case 6:
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d |
 			uint32(buf[2]&0xF)<<e | uint32(buf[2]>>4)<<f
 	}
 	return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d |
-		uint32(buf[2]&0xF)<<e | uint32(buf[2]>>4)<<f | uint32(buf[3])<<g
+		uint32(buf[2]&0xF)<<e | uint32(buf[2]>>4)<<f | uint32(buf[3]&0xF)<<g
 }
 
 func UnpackUint32From(r iobyte.ByteReader, buf []byte) (uint32, error) {
@@ -324,8 +325,10 @@ func UnpackUint32From(r iobyte.ByteReader, buf []byte) (uint32, error) {
 	if bitmap == 0 {
 		return 0, nil
 	}
-	n := bits.OnesCount8(bitmap)
-	if _, err := io.ReadFull(r, buf[:n]); err != nil {
+	// 1 or 2 nibbles per byte.
+	n := bits.OnesCount8(bitmap) + 1
+	n /= 2
+	if _, err := io.ReadFull(r, buf[:(n+1)/2]); err != nil {
 		return 0, err
 	}
 	return UnpackUint32(bitmap, buf), nil
