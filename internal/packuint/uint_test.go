@@ -55,6 +55,7 @@ func TestPackUint64(t *testing.T) {
 }
 
 func TestPackUint32(t *testing.T) {
+	v := int32(-3200)
 	for _, tc := range []uint32{
 		0,
 		1,
@@ -68,6 +69,7 @@ func TestPackUint32(t *testing.T) {
 		4294964096,
 		0xF0F0F0F0,
 		^uint32(0),
+		uint32(v),
 	} {
 		label := fmt.Sprintf("%d", tc)
 		t.Run(label, func(t *testing.T) {

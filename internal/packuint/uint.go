@@ -328,7 +328,7 @@ func UnpackUint32From(r iobyte.ByteReader, buf []byte) (uint32, error) {
 	// 1 or 2 nibbles per byte.
 	n := bits.OnesCount8(bitmap) + 1
 	n /= 2
-	if _, err := io.ReadFull(r, buf[:(n+1)/2]); err != nil {
+	if _, err := io.ReadFull(r, buf[:n]); err != nil {
 		return 0, err
 	}
 	return UnpackUint32(bitmap, buf), nil
