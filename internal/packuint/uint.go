@@ -126,40 +126,50 @@ func UnpackUint64(bitmap byte, buf []byte) uint64 {
 	case 0xFF:
 		return binary.LittleEndian.Uint64(buf)
 	}
-	_ = buf[6]
 	entry := unpackTable[bitmap-1]
 	a, b, c, d, e, f, g := entry.A()*8, entry.B()*8, entry.C()*8, entry.D()*8, entry.E()*8, entry.F()*8, entry.G()*8
 	switch entry.Num() {
 	case 1:
 		return uint64(buf[0]) << a
 	case 2:
+		_ = buf[1]
 		return uint64(buf[0])<<a | uint64(buf[1])<<b
 	case 3:
+		_ = buf[2]
 		return uint64(buf[0])<<a | uint64(buf[1])<<b | uint64(buf[2])<<c
 	case 4:
+		_ = buf[3]
 		return uint64(buf[0])<<a | uint64(buf[1])<<b | uint64(buf[2])<<c | uint64(buf[3])<<d
 	case 5:
+		_ = buf[4]
 		return uint64(buf[0])<<a | uint64(buf[1])<<b | uint64(buf[2])<<c | uint64(buf[3])<<d |
 			uint64(buf[4])<<e
 	case 6:
+		_ = buf[5]
 		return uint64(buf[0])<<a | uint64(buf[1])<<b | uint64(buf[2])<<c | uint64(buf[3])<<d |
 			uint64(buf[4])<<e | uint64(buf[5])<<f
 	}
+	_ = buf[6]
 	return uint64(buf[0])<<a | uint64(buf[1])<<b | uint64(buf[2])<<c | uint64(buf[3])<<d |
 		uint64(buf[4])<<e | uint64(buf[5])<<f | uint64(buf[6])<<g
 }
 
-func UnpackUint64From(r iobyte.ByteReader, buf []byte) (uint64, error) {
+func UnpackUint64From(r iobyte.ByteReader, buf []byte) (x uint64, err error) {
 	bitmap, err := r.ReadByte()
 	if err != nil {
-		return 0, err
+		return
 	}
 	if bitmap == 0 {
-		return 0, nil
+		return
 	}
 	n := bits.OnesCount8(bitmap)
-	if _, err := io.ReadFull(r, buf[:n]); err != nil {
-		return 0, err
+	if n == 1 {
+		buf[0], err = r.ReadByte()
+	} else {
+		_, err = io.ReadFull(r, buf[:n])
+	}
+	if err != nil {
+		return
 	}
 	return UnpackUint64(bitmap, buf), nil
 }
@@ -216,7 +226,7 @@ func PackUint32(buf []byte, x uint32) int {
 		buf[0] = bitmap
 		buf[1] = byte(acc)
 		buf[2] = byte(acc >> 8)
-		return 3
+		return 1 + (i+1)/2
 	}
 	x >>= shift
 
@@ -229,7 +239,7 @@ func PackUint32(buf []byte, x uint32) int {
 		buf[0] = bitmap
 		buf[1] = byte(acc)
 		buf[2] = byte(acc >> 8)
-		return 3
+		return 1 + (i+1)/2
 	}
 	x >>= shift
 
@@ -243,7 +253,7 @@ func PackUint32(buf []byte, x uint32) int {
 		buf[1] = byte(acc)
 		buf[2] = byte(acc >> 8)
 		buf[3] = byte(acc >> 16)
-		return 4
+		return 1 + (i+1)/2
 	}
 	x >>= shift
 
@@ -257,7 +267,7 @@ func PackUint32(buf []byte, x uint32) int {
 		buf[1] = byte(acc)
 		buf[2] = byte(acc >> 8)
 		buf[3] = byte(acc >> 16)
-		return 4
+		return 1 + (i+1)/2
 	}
 	x >>= shift
 
@@ -270,6 +280,7 @@ func PackUint32(buf []byte, x uint32) int {
 	if x := x & mask; x > 0 {
 		bitmap |= 1
 		acc |= x << (i * 4)
+		i++
 	}
 
 	buf[0] = bitmap
@@ -277,7 +288,7 @@ func PackUint32(buf []byte, x uint32) int {
 	buf[2] = byte(acc >> 8)
 	buf[3] = byte(acc >> 16)
 	buf[4] = byte(acc >> 24)
-	return 5
+	return 1 + (i+1)/2
 }
 
 func PackUint32To(w io.Writer, buf []byte, x uint32) error {
@@ -294,7 +305,6 @@ func UnpackUint32(bitmap byte, buf []byte) uint32 {
 	case 255:
 		return binary.LittleEndian.Uint32(buf)
 	}
-	_ = buf[3]
 	entry := unpackTable[bitmap-1]
 	a, b, c, d, e, f, g := entry.A()*4, entry.B()*4, entry.C()*4, entry.D()*4, entry.E()*4, entry.F()*4, entry.G()*4
 	switch entry.Num() {
@@ -303,33 +313,42 @@ func UnpackUint32(bitmap byte, buf []byte) uint32 {
 	case 2:
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b
 	case 3:
+		_ = buf[1]
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c
 	case 4:
+		_ = buf[1]
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d
 	case 5:
+		_ = buf[2]
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d |
 			uint32(buf[2]&0xF)<<e
 	case 6:
+		_ = buf[2]
 		return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d |
 			uint32(buf[2]&0xF)<<e | uint32(buf[2]>>4)<<f
 	}
+	_ = buf[3]
 	return uint32(buf[0]&0xF)<<a | uint32(buf[0]>>4)<<b | uint32(buf[1]&0xF)<<c | uint32(buf[1]>>4)<<d |
 		uint32(buf[2]&0xF)<<e | uint32(buf[2]>>4)<<f | uint32(buf[3]&0xF)<<g
 }
 
-func UnpackUint32From(r iobyte.ByteReader, buf []byte) (uint32, error) {
+func UnpackUint32From(r iobyte.ByteReader, buf []byte) (x uint32, err error) {
 	bitmap, err := r.ReadByte()
 	if err != nil {
-		return 0, err
+		return
 	}
 	if bitmap == 0 {
-		return 0, nil
+		return
 	}
 	// 1 or 2 nibbles per byte.
-	n := bits.OnesCount8(bitmap) + 1
-	n /= 2
-	if _, err := io.ReadFull(r, buf[:n]); err != nil {
-		return 0, err
+	n := (bits.OnesCount8(bitmap) + 1) / 2
+	if n == 1 {
+		buf[0], err = r.ReadByte()
+	} else {
+		_, err = io.ReadFull(r, buf[:n])
+	}
+	if err != nil {
+		return
 	}
 	return UnpackUint32(bitmap, buf), nil
 }

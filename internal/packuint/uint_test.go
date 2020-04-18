@@ -25,13 +25,14 @@ func TestPackUint64(t *testing.T) {
 		math.Float64bits(math.Pi),
 		math.Float64bits(math.Phi),
 		math.Float64bits(math.E),
+		6400,
 	} {
 		label := fmt.Sprintf("%d", tc)
 		t.Run(label, func(t *testing.T) {
 			buf := make([]byte, 16)
 			n := PackUint64(buf, tc)
 			t.Logf("packed size for %d = %d", tc, n)
-			x := UnpackUint64(buf[0], buf[1:])
+			x := UnpackUint64(buf[0], buf[1:n])
 			if got, want := x, tc; got != want {
 				t.Errorf("got %d; want %d", got, want)
 			}
@@ -62,6 +63,7 @@ func TestPackUint32(t *testing.T) {
 		127,
 		128,
 		256,
+		3200,
 		1 << 10,
 		1 << 20,
 		1<<20 | 1<<10,
@@ -76,7 +78,7 @@ func TestPackUint32(t *testing.T) {
 			buf := make([]byte, 16)
 			n := PackUint32(buf, tc)
 			t.Logf("packed size for %d = %d", tc, n)
-			x := UnpackUint32(buf[0], buf[1:])
+			x := UnpackUint32(buf[0], buf[1:n])
 			if got, want := x, tc; got != want {
 				t.Errorf("got %d; want %d", got, want)
 			}
