@@ -1,2 +1,4 @@
-// Package packer provides code generation utilities to perform safe operations on optimized data structures.
+// Package packer provides utilities to easily perform serialization:
+//  - code generation for safe operations on optimized data structures
+//  - unsigned integers serialization with packing
 package packer

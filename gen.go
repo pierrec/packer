@@ -21,7 +21,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer out.Close()
-	err = packer.Struct(out, "packer", Header{})
+	err = packer.GenPackedStruct(out, "packer", Header{})
 	if err != nil {
 		log.Fatal(err)
 	}
