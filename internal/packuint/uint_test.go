@@ -65,6 +65,7 @@ func TestPackUint32(t *testing.T) {
 		1 << 20,
 		1<<20 | 1<<10,
 		1 << 31,
+		4294964096,
 		0xF0F0F0F0,
 		^uint32(0),
 	} {

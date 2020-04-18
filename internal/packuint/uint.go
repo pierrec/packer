@@ -167,7 +167,7 @@ func UnpackUint64From(r iobyte.ByteReader, buf []byte) (uint64, error) {
 // PackUint32 packs x into buf and returns the number of bytes used.
 // buf must be at least 5 bytes long.
 func PackUint32(buf []byte, x uint32) int {
-	_ = buf[5]
+	_ = buf[4]
 	if x == 0 {
 		buf[0] = 0
 		return 1
