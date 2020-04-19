@@ -163,7 +163,7 @@ func GenPackedStruct(w io.Writer, config *Config, s interface{}) error {
 	default:
 		return werr(ErrStructOverflow)
 	}
-	typname := fmt.Sprintf("packuint%d", size)
+	typname := fmt.Sprintf("uint%d", size)
 	for i := range fields {
 		fields[i].TypeName = typ.Name()
 		fields[i].Type = typname
