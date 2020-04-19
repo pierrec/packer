@@ -132,8 +132,9 @@ func GenPackedStruct(w io.Writer, config *Config, s interface{}) error {
 		}
 
 		fields = append(fields, _Field{
-			Name:  field.Name,
-			Out:   out.String(),
+			Name: field.Name,
+			// Remove local path name.
+			Out:   strings.TrimPrefix(out.String(), config.PkgName+"."),
 			Shift: size,
 			Mask:  fmt.Sprintf("0x%X", 1<<outBits-1),
 		})
